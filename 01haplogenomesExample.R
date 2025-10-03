@@ -2,9 +2,9 @@
 source("code/utility.R")
 
 
-genomeLength <- 10
+genomeLength <- 10000
 refGenome <- sample(c("A", "C", "G", "T"), size = genomeLength, replace = TRUE)
-nSnp <- 3
+nSnp <- 50
 
 
 (snpLoc <- sort(sample(1:genomeLength, size = nSnp, replace = FALSE)))
@@ -18,5 +18,5 @@ nHap <- 12
 (xACTG <- convert01ToACTG(x = x01, bases = snpBases))
 
 # THis should be a little more memory-saving, does not store the whole genome matrix
-writeHaploGenomesToFasta(xACTG, snpLoc, refGenome, ploidy = 2)
+writeHaploGenomesToFasta(xACTG, snpLoc, refGenome, ploidy = 2, outDir = "haploGenomes")
 writeHaploGenomesToFasta(xACTG, snpLoc, refGenome, ploidy = 4, outDir = "haploGenomes4")

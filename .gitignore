@@ -49,3 +49,9 @@ po/*~
 rsconnect/
 
 */*fasta
+*/*fastq
+*/*fa
+*/*fq
+*/*kmc_pre
+*/*kmc_suf
+wgsim/*
