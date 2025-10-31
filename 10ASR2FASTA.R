@@ -158,6 +158,9 @@ makeAltAlleles <- function(ref, pos, isInsertion){
   return(altAlleles)
 }
 
+# TODO GO ON HERE
+
+# TODO, make work for multiple chromosomes
 # make some alt alleles to be used below
 aa <- makeAltAlleles(ref=ref, pos=pos, isInsertion = isInsertion)
 
