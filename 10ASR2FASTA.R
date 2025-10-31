@@ -1,45 +1,140 @@
 
-setwd("~/git_repos/hbecher_ASR2kmerGwas/")
 
+rm(list = ls())
+library(here)
 library(AlphaSimR)
 
+
+breedingProgDir <- "breedingProg"
 
 
 # Parameters --------------------------------------------------------------
 
 
-mu=1e-7
-LL=1e5
-prIns <- 0.1 # proportion of mutation that are insertions
-
-
 # Reference genome/ancestral alleles --------------------------------------
 
-ref = sample(c("A","C","G","T"), size=LL, replace=TRUE)
+chrLens <- c(10000,10000, 20000) # in nt
+
+refList = lapply(chrLens, \(x) sample(c("A","C","G","T"), size=x, replace=TRUE))
+
+
+# Run breeding simulation ------------------------------------------------
+
+source(paste(here(), breedingProgDir, "00RUNME.R", sep="/"))
+
 
 
 # Generate variant data (haplotype 'matrix') ---------------------------------------------------
-founders <- runMacs2(nInd=1,
-                     nChr=1,
-                     segSites=NULL,
-                     Ne=200000,
-                     bp=LL,
-                     genLen = LL/1e8,
-                     ploidy=2,
-                     mutRate=mu)
-
-mySP <- SimParam$new(founderPop = founders)
-pop0 <- newPop(rawPop = founders,
-               simParam = mySP)
-haplo <- pullSegSiteHaplo(pop0, simParam = mySP)
 
 
-# Prepare for conversion --------------------------------------------------
-# Convert map locations to integer nucleotide positions, making sure there are no duplicated sites created during conversion!
-stopifnot(all(!duplicated(as.integer(mySP$genMap$"1"*1e8)))); pos <- as.integer(mySP$genMap$"1"*1e8)
+
+# genet map is a list of vectors
+gMap <- SP$genMap
+# number of 'variant' sites per chromosome
+varSitesPerChr <- sapply(gMap, length)
+
+cMap <- do.call(c, gMap) # concatenated map (relies on element names)
+
+trait1lpc <- SP$traits[[1]]@lociPerChr
+
+trait1ll <- SP$traits[[1]]@lociLoc
+
+sum(trait1lpc) == length(trait1ll)
+
+# cumulative sums of number of QTLs per chromosome
+cs <- c(0, cumsum(trait1lpc))
+
+# cumulative sums of number of var sites per chromosome
+csChrom <- c(0, cumsum(varSitesPerChr))
+
+# a list of vectors, one for each chromosome, with the indices of the QTLs (among all variant sites)
+trait1chromPosList <- lapply(1:(length(cs)-1), function(x) {
+  trait1ll[(cs[x]+1):cs[x+1]]+csChrom[x]
+})
+
+SP$traits[[1]]@addEff
+# QTL indices and additive effects per chromosome (two lists))
+getTraitQtlData <- function(trt, SimParam=SP){
+  traitlpc <- SimParam$traits[[trt]]@lociPerChr
+  traitll <- SimParam$traits[[trt]]@lociLoc
+  
+  cs <- c(0, cumsum(traitlpc))
+  
+  traitchromPosList <- lapply(1:(length(cs)-1), function(x) {
+    
+    traitll[(cs[x]+1):cs[x+1]]})
+  
+  posList <- mapply(function(x,y) {
+    x[y]
+  }, SP$genMap, traitchromPosList, SIMPLIFY = FALSE)
+  
+  addEffList <- lapply(1:(length(cs)-1), function(x) {
+    SP$traits[[trt]]@addEff[(cs[x]+1):cs[x+1]]
+  })
+  
+  return(list(pos=posList, addEff=addEffList))
+}
+
+
+t1data <- getTraitQtlData(1, SimParam=SP)
+
+# gpl - list of genetic positions (one vector per chromosome)
+# chrl - vector of chromosome lenghts
+# mfl - (optional) a list of mapping functions (gneet pos to nt pos)
+genetPos2ntPos <- function(gpl, chrl, mfl){
+  if(!missing(mfl)) stop("Mapping functions are not implemented yet.")
+  stopifnot(length(gpl) == length(chrl))
+  intPosList <- mapply(function(pos, len) {
+    round(pos/ max(pos) * len)
+  }, gpl, chrl, SIMPLIFY = FALSE)
+  # space out positions to avoid duplicates
+  intPosList <- lapply(intPosList, function(x) {
+    dupIdx <- which(duplicated(x))
+    while(length(dupIdx) > 0){
+      x[dupIdx] <- x[dupIdx] + 1
+      dupIdx <- which(duplicated(x))
+    }
+    return(x)
+  })
+  return(intPosList)
+}
+
+ntPos <- genetPos2ntPos(SP$genMap, chrLens)
+
+# none duplicated?
+sapply(ntPos, \(x) any(duplicated(x)))
+
+
+
+# TODO check what population(s) to use here
+haplo <- pullSegSiteHaplo(AYT, simParam = SP)
+dim(haplo)
+
+haplo2list <- function(haplo, varSitesPerChr){
+  lst <- list()
+  cs <- c(0, cumsum(varSitesPerChr))
+  for(i in 1:length(varSitesPerChr)){
+    lst[[i]] <- haplo[ , (cs[i]+1):cs[i+1] ]
+  }
+  return(lst)
+}
+
+haploList <- haplo2list(haplo, varSitesPerChr)
+lapply(haploList, dim)
+
+
+
 
 # decide which variant sites are indels
-isInsertion <- sample(c(T, F), prob = c(prIns, 1-prIns), size=length(pos), replace = TRUE)
+prIns <- 0.1 # probability of an insertion at a variant site
+makeInsertionBoolList <- function(vcpc, prIns=prIns){
+  lapply(1:length(vcpc), \(x){
+  sample(c(T, F), prob = c(prIns, 1-prIns), size=vcpc[x], replace = TRUE)
+})
+}
+
+insBoolList <- makeInsertionBoolList(varSitesPerChr, prIns=0.1)
+
 
 # a function to create insertion alleles of a given length
 makeInsertionAllele <- function(len){
