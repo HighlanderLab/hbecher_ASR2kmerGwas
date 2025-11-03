@@ -7,6 +7,12 @@ library(AlphaSimR)
 source(here("code/utility.R"))
 
 breedingProgDir <- "breedingProg"
+fastaDir <- "fasta"
+
+if (!dir.exists(here(fastaDir))) {
+  dir.create(here(fastaDir), recursive = TRUE)
+}
+
 
 
 # Parameters --------------------------------------------------------------
@@ -70,9 +76,7 @@ sapply(ntPos, \(x) any(duplicated(x)))
 insBoolList <- makeInsertionBoolList(varSitesPerChr, prIns=0.1)
 
 
-# TODO GO ON HERE
 
-# TODO, make work for multiple chromosomes
 # make some alt alleles to be used below
 aa <- makeAltAlleles(ref=refList, pos=ntPos, isInsertion = insBoolList)
 
@@ -82,8 +86,8 @@ aa <- makeAltAlleles(ref=refList, pos=ntPos, isInsertion = insBoolList)
 tDat <- getTraitQtlData(1, SimParam=SP)
 ntList <-  genetPos2ntPos(SP$genMap, chrLens)
 
-locusTable <- makeVarLocList(tDat, ntList)
-
+locusTable <- makeVarLocList(tDat, ntList, insBoolList)
+write.table(locusTable, file="AllVarLoci.txt", row.names = FALSE, quote=FALSE)
 # Consider adding k-mer sequences (ref and alt) to the table,
 #  could be comma-separated strings
 #  this will depend on the k-mer length
@@ -113,7 +117,10 @@ write.table(gvData, file="AllGvData.txt", sep="\t", row.names=FALSE, quote=FALSE
 # Create FASTAs -----------------------------------------------------------
 
 haploFiles <- dir(pattern="haplotypes")
-haploFiles <- haploFiles[1] # for debug
+
+# if these are too many files, focus on a subset only
+haploFiles <- dir(pattern="haplotypes*PYT")
+
 # loop over haplo files
 for(hf in haploFiles){
   print(paste0("Working on file ", hf, "..."))
@@ -124,7 +131,7 @@ for(hf in haploFiles){
   for(ind in 1:(nrow(hapMat)/ploidy)){
     indNam = strsplit(row.names(hapMat)[(ind-1)*ploidy +1], split="_")[[1]][1]
     
-    fname <- paste0("Ind", indNam, ".fa")
+    fname <- here(fastaDir, paste0("Ind", indNam, ".fa"))
     print(paste0(" Writing haplotype FASTA to ", fname, "..."))
     makeFasta(fname,
               idx=c((ind-1)*ploidy +1,(ind-1)*ploidy +2),

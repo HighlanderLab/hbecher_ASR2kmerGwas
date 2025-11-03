@@ -107,11 +107,12 @@ makeAltAlleles <- function(ref, pos, isInsertion){
 
 
 # a function to consolidate locus and QTL infomration
-makeVarLocList <- function(tDat, posList){
+makeVarLocList <- function(tDat, posList, isIns){
   locDf <- data.frame(id=do.call(c, lapply(posList, \(x) names(x))),
                       chr=rep(1:length(posList), times=sapply(posList, length)),
                       loc=unname(do.call(c, posList)),
-                      eff=0
+                      eff=0,
+                      isIns=unname(do.call(c, isIns))
   )
   for(i in 1:length(tDat$pos)){
     for(j in 1:length(tDat$pos[[i]])){
