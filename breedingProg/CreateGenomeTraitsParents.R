@@ -1,22 +1,30 @@
 # Create founders
 
-# Generate initial haplotypes
-if (quickGenomeSim) {
-  founderPop = quickHaplo(
-    nInd = nParents,
-    nChr = nChr,
-    segSites = nQtl + max(nSnp),
-    inbred = TRUE
-  )
-} else {
-  founderPop = runMacs(
-    nInd = nParents,
-    nChr = nChr,
-    segSites = nQtl + max(nSnp),
-    inbred = TRUE,
-    species = "WHEAT"
-  )
-}
+# # Generate initial haplotypes
+# if (quickGenomeSim) {
+#   founderPop = quickHaplo(
+#     nInd = nParents,
+#     nChr = nChr,
+#     segSites = nQtl + max(nSnp),
+#     inbred = TRUE
+#   )
+# } else {
+#   founderPop = runMacs(
+#     nInd = nParents,
+#     nChr = nChr,
+#     segSites = nQtl + max(nSnp),
+#     inbred = TRUE,
+#     species = "WHEAT"
+#   )
+# }
+
+founderPop = runMacs2(
+  nInd = nParents,
+  nChr = nChr,
+  inbred = TRUE,
+  mutRate=2e-10,
+  ploidy=2L
+)
 print(founderPop)
 
 SP = SimParam$new(founderPop)

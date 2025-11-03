@@ -7,130 +7,169 @@
 # TODO: This is a prototype implementation and is likely inefficient - identify
 #       bottlenecks and optimise.
 
-genomeLength <- 10
-refGenome <- sample(c("A", "C", "G", "T"), size = genomeLength, replace = TRUE)
-nSnp <- 3
-pos <- c(2, 5, 7)
-snpLoc <- sort(sample(1:genomeLength, size = nSnp, replace = FALSE))
-nHap <- 4
-x01 <- matrix(sample(x = 0:1, nSnp * nHap, replace = TRUE), nrow = nHap)
 
-rSnpBases <- function(n) {
-  #' Generate a random set of n bi-allelic SNPs bases with transition mutations
-  #' @n number of SNPs
-  #' @return 2-column matrix holding ancestral alleles in column 1 and derived alleles in column 2
-  #' @examples
-  #' rSnpBases(n = 20)
-  # Only bi-allelic SNP, transition mutations, and showing one strand only
-  baseMutations <- matrix( # fmt: skip
-    data = c("A", "G",
-             "C", "T",
-             "G", "A",
-             "T", "C"),
-    nrow = 4, ncol = 2, byrow = TRUE) # fmt: skip
-  ancestralBaseInt <- sample(x = 1:4, size = n, replace = TRUE)
-  ancestralBaseChar <- baseMutations[ancestralBaseInt, 1]
-  derivedBaseChar <- baseMutations[ancestralBaseInt, 2]
-  bases <- matrix(
-    data = c(ancestralBaseChar, derivedBaseChar),
-    ncol = 2,
-    byrow = FALSE
-  )
-  return(bases)
-}
-
-
-convert01ToACTG <- function(x, bases) {
-  #' Convert a matrix of haplotypes encoded as 0/1 to A/C/T/G assuming bi-allelic SNPs
-  #' @x numeric matrix of 0 and 1
-  #' @bases 2-column matrix holding ancestral alleles in column 1 and derived alleles in column 2
-  #' @return character matrix of A, C, T, and G
-  #' @examples
-  #' x <- matrix(sample(x = 0:1, 20, replace = TRUE), nrow = 4)
-  #' convert01ToACTG(x, bases = rSnpBases(n = 20))
-  nLoc <- ncol(x)
-  ret <- matrix(data = "", nrow = nrow(x), ncol = nLoc)
-  for (loc in 1:nLoc) {
-    ret[, loc] = bases[loc, ][x[, loc] + 1]
-  }
-  return(ret)
-}
-
-
-expandSnpToGenome <- function(x, loc, genome) {
-  #' Expand a SNP haplotype matrix to a full genome sequence matrix
-  #' @x character matrix of A/C/T/G bases
-  #' @loc integer vector indicating SNP locations in the genome
-  #' @genome character vector of the full genome sequence
-  #' @return character matrix of the full genome sequence
-  #' @examples
-  #' x <- matrix(sample(c("A", "C", "G", "T"), size = 20, replace = TRUE), nrow = 4)
-  #' loc <- sort(sample(1:100, size = 20, replace = FALSE))
-  #' genome <- sample(c("A", "C", "G", "T"), size = 100, replace = TRUE)
-  #' expandSegSitesToGenome(x, loc, genome)
-  nInd <- nrow(x)
-  genomeLength <- length(genome)
-  ret <- matrix(data = "", nrow = nInd, ncol = genomeLength)
-  for (ind in 1:nInd) {
-    ret[ind, ] <- genome
-    ret[ind, loc] <- x[ind, ]
-  }
-  return(ret)
+# QTL indices and additive effects per chromosome (two lists))
+getTraitQtlData <- function(trt, SimParam=SP){
+  traitlpc <- SimParam$traits[[trt]]@lociPerChr
+  traitll <- SimParam$traits[[trt]]@lociLoc
+  
+  cs <- c(0, cumsum(traitlpc))
+  
+  traitchromPosList <- lapply(1:(length(cs)-1), function(x) {
+    
+    traitll[(cs[x]+1):cs[x+1]]})
+  
+  posList <- mapply(function(x,y) {
+    x[y]
+  }, SP$genMap, traitchromPosList, SIMPLIFY = FALSE)
+  
+  addEffList <- lapply(1:(length(cs)-1), function(x) {
+    SP$traits[[trt]]@addEff[(cs[x]+1):cs[x+1]]
+  })
+  
+  return(list(pos=posList, addEff=addEffList))
 }
 
 
 
-
-# function to generate a genome reference, vectore of character
-makeRefGenome <- function(length) {
-  #' Generate a random reference genome sequence
-  #' @length integer length of the genome
-  #' @return character vector of the full genome sequence
-  #' @examples
-  #' makeRefGenome(length = 100)
-  genome <- sample(c("A", "C", "G", "T"), size = length, replace = TRUE)
-  return(genome)
-}
-
-# function to write out haplogenomes based on reference and snps, to fasta files,
-# one individual per file, this should be ploidy-aware
-writeHaploGenomesToFasta <- function(
-    x,
-    loc,
-    genome,
-    prefix = "individual",
-    outDir = "haploGenomes",
-    ploidy = 2
-) {
-  #' Write out haplogenomes to fasta files, one individual per file
-  #' @x character matrix of A/C/T/G bases
-  #' @loc integer vector indicating SNP locations in the genome
-  #' @genome character vector of the full genome sequence
-  #' @prefix character prefix for the output fasta files
-  #' @outDir character output directory for the fasta files
-  #' @ploidy integer ploidy of the individuals
-  #' @return NULL
-  #' @examples
-  #' x <- matrix(sample(c("A", "C", "G", "T"), size = 20, replace = TRUE), nrow = 4)
-  #' loc <- sort(sample(1:100, size = 20, replace = FALSE))
-  #' genome <- sample(c("A", "C", "G", "T"), size = 100, replace = TRUE)
-  #' writeHaploGenomesToFasta(x, loc, genome, ploidy = 2)
-  if (!dir.exists(outDir)) {
-    dir.create(outDir, recursive = TRUE)
-  }
-  nInd <- nrow(x) / ploidy
-  for (ind in 1:nInd) {
-    haploGenomes <- expandSnpToGenome(
-      x = x[((ind - 1) * ploidy + 1):(ind * ploidy), ],
-      loc = loc,
-      genome = genome
-    )
-    fastaLines <- c()
-    for (haplo in 1:ploidy) {
-      fastaLines <- c(fastaLines, paste0(">", prefix, ind, "_haplo", haplo))
-      fastaLines <- c(fastaLines, paste(haploGenomes[haplo, ], collapse = ""))
+# gpl - list of genetic positions (one vector per chromosome)
+# chrl - vector of chromosome lenghts
+# mfl - (optional) a list of mapping functions (gneet pos to nt pos)
+genetPos2ntPos <- function(gpl, chrl, mfl){
+  if(!missing(mfl)) stop("Mapping functions are not implemented yet.")
+  stopifnot(length(gpl) == length(chrl))
+  intPosList <- mapply(function(pos, len) {
+    round(pos/ max(pos) * len)+1
+  }, gpl, chrl-1, SIMPLIFY = FALSE)
+  # space out positions to avoid duplicates
+  intPosList <- lapply(intPosList, function(x) {
+    dupIdx <- which(duplicated(x))
+    while(length(dupIdx) > 0){
+      x[dupIdx] <- x[dupIdx] + 1
+      dupIdx <- which(duplicated(x))
     }
-    writeLines(fastaLines, con = file.path(outDir, paste0(prefix, ind, ".fasta")))
-  }
-  return(NULL)
+    return(x)
+  })
+  return(intPosList)
 }
+
+
+
+# Convert haplotype matrix to list of matrices (one per chromosome)
+haplo2list <- function(haplo, varSitesPerChr){
+  lst <- list()
+  cs <- c(0, cumsum(varSitesPerChr))
+  for(i in 1:length(varSitesPerChr)){
+    lst[[i]] <- haplo[ , (cs[i]+1):cs[i+1] ]
+  }
+  return(lst)
+}
+
+
+
+# logical indicator vectors for which variant sites are insertions
+makeInsertionBoolList <- function(vcpc, prIns=prIns){
+  lapply(1:length(vcpc), \(x){
+    sample(c(T, F), prob = c(prIns, 1-prIns), size=vcpc[x], replace = TRUE)
+  })
+}
+
+
+
+# a function to create insertion alleles of a given length
+makeInsertionAllele <- function(len){
+  paste0(sample(c("A","C","G","T"), size=len, replace = TRUE), collapse = "")
+}
+#makeInsertionAllele(30)
+
+
+# a function to make alternate alleles for each variant site, taking into
+#  account the reference allele and whether it's going to be an insertion
+# ref, po, and isInsertion are lists of vectors
+makeAltAlleles <- function(ref, pos, isInsertion){
+  altAlleles <- list()  
+  
+  for(i in 1:length(pos)){
+    currList <- character()
+    for(j in 1:length(pos[[i]])){
+
+      if(isInsertion[[i]][j]) {
+        currList[j] <- makeInsertionAllele(30)
+      } else {
+        currList[j] <- sample(setdiff(c("A", "C", "G", "T"), ref[[i]][pos[[i]][j]]  ), 1)
+      }
+#      print(currList[j])
+    }
+    altAlleles[[i]] <- currList
+  }
+  return(altAlleles)
+}
+
+
+# a function to consolidate locus and QTL infomration
+makeVarLocList <- function(tDat, posList){
+  locDf <- data.frame(id=do.call(c, lapply(posList, \(x) names(x))),
+                      chr=rep(1:length(posList), times=sapply(posList, length)),
+                      loc=unname(do.call(c, posList)),
+                      eff=0
+  )
+  for(i in 1:length(tDat$pos)){
+    for(j in 1:length(tDat$pos[[i]])){
+      locDf$eff[locDf$id == names(tDat$pos[[i]][j])] <-
+        tDat$addEff[[i]][j]
+    }
+  }
+  return(locDf)
+}
+
+
+
+
+# one haplotype for a single chromosome, a string
+makeFastaString <- function(ref, hapArr, pos, aa, hapIndex){
+  vec <- ref # vector as long as the ref genome
+  
+  # indexing over number of variant sites
+  #  replace allele if corresponding index in the respective haplotype is 1
+  #  (i.e., if derived state)
+  for(i in 1:length(pos)){
+    if(hapArr[hapIndex,i] == 1) vec[pos[i]] <- aa[i]
+  }
+  return(paste0(paste0(vec, collapse=""), "\n"))
+}
+
+
+# one haplotype for each chromosome, a list of strings
+makeFastaStringList <- function(refL, hapArrL, posL, aaL, hapIndex){
+  fastaStrL <- list()
+  for(chr in 1:length(refL)){
+    fastaStrL[[chr]] <- makeFastaString(ref=refL[[chr]],
+                                        hapArr=hapArrL[[chr]],
+                                        pos=posL[[chr]],
+                                        aa=aaL[[chr]],
+                                        hapIndex=hapIndex)
+  }
+  return(fastaStrL)
+}
+
+# function to write out a FASTA file of the desired ploidy level
+#  ploidy is set by the length of the vector idx
+#  uses makeFastaStringList to generate afst strings
+makeFasta <- function(fname, idx=c(1,2), ref, hap, aa, pos, varSitesPerChrom, indName){
+  f <- file(fname, "w")
+  for(hpt in 1:length(idx)){
+    fsl <- makeFastaStringList(refL=ref,
+                                 hapArrL=haplo2list(hap, varSitesPerChrom),
+                                 posL=pos,
+                                 aaL=aa,
+                                 hapIndex=idx[hpt])
+    for(chr in 1:length(fsl)){
+      cat(paste0(">Ind_", indName, "_hap_", hpt, "_chr_", chr, "\n"),
+          file=fname, append=TRUE)
+      cat(fsl[[chr]], file=fname, append=TRUE)
+    }
+   }
+  close(f)
+}
+
+

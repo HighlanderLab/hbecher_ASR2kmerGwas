@@ -3,7 +3,7 @@
 # ---- Number of simulation replications and breeding cycles ----
 nReps = 1 # Number of simulation replicates
 nBurnin = 10 # Number of years in burnin phase
-nFuture = 10 # Number of years in future phase
+nFuture = 3 # Number of years in future phase
 nCycles = nBurnin + nFuture
 startTP = 10 # Year to start collecting genomic data
 
@@ -12,9 +12,10 @@ quickGenomeSim = FALSE # it doesn't make much of a difference
 #nChr = 16
 nChr = 3
 #nQtl = 1000 # Number of QTL per chromosome
-nQtl = 50 # Number of QTL per chromosome
+nQtl = 10 # Number of QTL per chromosome
 #nSnp = c(256, 170000) # Number of SNP per chromosome
-nSnp = c(1000) # Number of SNP per chromosome
+nSnp = c(100) # Number of SNP per chromosome
+ploidy=2
 
 # ---- Initial parents mean and variance ----
 initMeanG = 1 # Initial mean of genetic values

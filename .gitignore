@@ -45,3 +45,5 @@ wgsim/*
 ./*txt
 ./*rds
 10ASR2FASTA.R
+
+*/*txt.gz
