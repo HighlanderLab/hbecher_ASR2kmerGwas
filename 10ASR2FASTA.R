@@ -88,16 +88,27 @@ locusTable <- makeVarLocList(tDat, ntList)
 #  could be comma-separated strings
 #  this will depend on the k-mer length
 
+
+
+
 # Consolidate pheno files produced ----------------------------------------
 
 phenoFiles <- dir(pattern="phenoPredict")
 phenoData <- do.call(rbind, lapply(phenoFiles, function(f){
   read.table(f, header=TRUE)
 }))
-
+write.table(phenoData, file="AllPhenoData.txt", sep="\t", row.names=FALSE, quote=FALSE)
 head(phenoData)
 
+# same thin for gv files
+gvFiles <- dir(pattern="gvPredict")
+gvData <- do.call(rbind, lapply(gvFiles, function(f){
+  read.table(f, header=TRUE)
+}))
+write.table(gvData, file="AllGvData.txt", sep="\t", row.names=FALSE, quote=FALSE)
 
+
+#pairs(cbind(gvData, phenoData)[,-c(1, 3, 5, 7, 8, 10)])
 
 # Create FASTAs -----------------------------------------------------------
 
