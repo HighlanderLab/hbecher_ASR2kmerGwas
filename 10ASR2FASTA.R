@@ -81,13 +81,17 @@ insBoolList <- makeInsertionBoolList(varSitesPerChr, prIns=0.1)
 aa <- makeAltAlleles(ref=refList, pos=ntPos, isInsertion = insBoolList)
 
 
-# Table of var sites and effect sizes -------------------------------------
+# Table of var sites and additive effect sizes -------------------------------------
 
-tDat <- getTraitQtlData(1, SimParam=SP)
+t1Dat <- getTraitQtlData(1, SimParam=SP)
+t2Dat <- getTraitQtlData(2, SimParam=SP) #  this trait has epistasis, too
+t3Dat <- getTraitQtlData(3, SimParam=SP)
+t4Dat <- getTraitQtlData(4, SimParam=SP) #  this trait has epistasis, too
 ntList <-  genetPos2ntPos(SP$genMap, chrLens)
 
-locusTable <- makeVarLocList(tDat, ntList, insBoolList)
-write.table(locusTable, file="AllVarLoci.txt", row.names = FALSE, quote=FALSE)
+locusTable <- makeVarLocList(list(t1Dat, t2Dat, t3Dat, t4Dat), ntList, insBoolList)
+# head(locusTable)
+write.table(locusTable, file="AllVarLociAddPart.txt", row.names = FALSE, quote=FALSE)
 # Consider adding k-mer sequences (ref and alt) to the table,
 #  could be comma-separated strings
 #  this will depend on the k-mer length

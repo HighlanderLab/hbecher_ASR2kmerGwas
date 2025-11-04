@@ -24,7 +24,7 @@ initRelAA = 0.2 # relative additive-by-additive variance compared to initVarG
 #                 (in a diploid organism with allele frequency 0.5)
 initVarEnv = 1e-6 # Virtually zero for consistency with 2-Part paper
 initVarGE = 0 # Genotype-by-Environment (GxE) variance (setting to 0 to keep things simple)
-varE = c(4, 4) # Yield trial error variance, bushels per acre
+varE = c(4, 4, 4, 4) # Yield trial error variance, bushels per acre
 # Relates to error variance for an entry mean
 
 # ---- Breeding program details ----
