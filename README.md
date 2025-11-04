@@ -13,3 +13,6 @@ Use column `gv.Trait1` from file `AllGvData.txt` as phenotypes.
 
 ## Requirements
 - R: AlphaSimR, dplyr, here
+
+## Code sources
+This uses code from https://github.com/gregorgorjanc/ggenerator, which is a fork of https://github.com/Rabab53/ggenerator.
