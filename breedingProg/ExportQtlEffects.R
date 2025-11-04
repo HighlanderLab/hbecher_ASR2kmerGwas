@@ -168,7 +168,7 @@ QTL2 = QTL2[
 # head(QTL2)
 write.table(
   x = QTL2,
-  file = "QTL2Gamma.txt",
+  file = "QTL2Gauss.txt",
   row.names = FALSE,
   col.names = TRUE,
   quote = FALSE
