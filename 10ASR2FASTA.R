@@ -116,6 +116,17 @@ write.table(gvData, file="AllGvData.txt", sep="\t", row.names=FALSE, quote=FALSE
 
 # Create FASTAs -----------------------------------------------------------
 
+# reference genome first
+refFile <- here(fastaDir, "ReferenceGenome.fa")
+for(chr in 1:length(refList)){
+  cat(paste0(">Chr", chr,"\n",
+             paste0(refList[[chr]], collapse=""), "\n"
+  ),
+  file=refFile,
+  append=TRUE)
+}
+
+# now the individuals simulated
 haploFiles <- dir(pattern="haplotypes")
 
 # if these are too many files, focus on a subset only
