@@ -108,16 +108,20 @@ makeAltAlleles <- function(ref, pos, isInsertion){
 
 # a function to consolidate locus and QTL infomration
 makeVarLocList <- function(tDat, posList, isIns){
+  # tDat is a list of trait info objects (lists themselves)
+  lIndex = 1:length(tDat)
   locDf <- data.frame(id=do.call(c, lapply(posList, \(x) names(x))),
                       chr=rep(1:length(posList), times=sapply(posList, length)),
-                      loc=unname(do.call(c, posList)),
-                      eff=0,
-                      isIns=unname(do.call(c, isIns))
+                      nuclPos=unname(do.call(c, posList)),
+                      isInsertion=unname(do.call(c, isIns))
   )
-  for(i in 1:length(tDat$pos)){
-    for(j in 1:length(tDat$pos[[i]])){
-      locDf$eff[locDf$id == names(tDat$pos[[i]][j])] <-
-        tDat$addEff[[i]][j]
+  for(k in lIndex){
+    locDf[[paste0("eff", k)]] <- 0.0
+    for(i in 1:length(tDat[[k]]$pos)){ # loop over chromosomes
+      for(j in 1:length(tDat[[k]]$pos[[i]])){ # loop over positions
+        locDf[[paste0("eff", k)]][locDf$id == names(tDat[[k]]$pos[[i]][j])] <-
+          tDat[[k]]$addEff[[i]][j]
+      }
     }
   }
   return(locDf)

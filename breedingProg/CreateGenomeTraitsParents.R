@@ -22,7 +22,7 @@ founderPop = runMacs2(
   nInd = nParents,
   nChr = nChr,
   inbred = TRUE,
-  mutRate=2e-10,
+  mutRate=2.5e-10,
   ploidy=2L
 )
 print(founderPop)
@@ -30,7 +30,7 @@ print(founderPop)
 SP = SimParam$new(founderPop)
 
 # Add SNP chip/array (with markers that don't overlap with QTL)
-SP$restrSegSites(nQtl, max(nSnp))
+SP$restrSegSites(nQtl*4, max(nSnp))
 if (any(nSnp > 0)) {
   for (n in nSnp) {
     SP$addSnpChip(n)
@@ -38,6 +38,17 @@ if (any(nSnp > 0)) {
 }
 
 # Add a trait such as yield (effects sampled from a Gaussian distribution)
+# Trait 1: Additive, and GxE, gaussian
+SP$addTraitAG(
+  nQtlPerChr = nQtl,
+  mean = initMeanG,
+  var = initVarG,
+  varEnv = initVarEnv,
+  varGxE = initVarGE
+)
+
+
+# Trait 2: Additive, epistatic, and GxE, gaussian
 SP$addTraitAEG(
   nQtlPerChr = nQtl,
   mean = initMeanG,
@@ -47,7 +58,19 @@ SP$addTraitAEG(
   varGxE = initVarGE
 )
 
+
 # Add another trait (effects sampled from a gamma distribution)
+# Trait 3: Additive, and GxE, gamma
+SP$addTraitAG(
+  nQtlPerChr = nQtl,
+  mean = initMeanG,
+  var = initVarG,
+  varEnv = initVarEnv,
+  varGxE = initVarGE,
+  gamma = TRUE,
+  shape = 0.25
+)
+# Trait 4: Additive, epistasis, and GxE, gamma
 SP$addTraitAEG(
   nQtlPerChr = nQtl,
   mean = initMeanG,
