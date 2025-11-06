@@ -38,46 +38,38 @@ if (any(nSnp > 0)) {
 }
 
 # Add a trait such as yield (effects sampled from a Gaussian distribution)
-# Trait 1: Additive, and GxE, gaussian
-SP$addTraitAG(
+# Trait 1: Additive, gaussian
+SP$addTraitA(
   nQtlPerChr = nQtl,
   mean = initMeanG,
-  var = initVarG,
-  varEnv = initVarEnv,
-  varGxE = initVarGE
+  var = initVarG
 )
 
 
-# Trait 2: Additive, epistatic, and GxE, gaussian
-SP$addTraitAEG(
+# Trait 2: Additive, epistatic, gaussian
+SP$addTraitAE(
   nQtlPerChr = nQtl,
   mean = initMeanG,
   var = initVarG,
-  relAA = initRelAA,
-  varEnv = initVarEnv,
-  varGxE = initVarGE
+  relAA = initRelAA
 )
 
 
 # Add another trait (effects sampled from a gamma distribution)
-# Trait 3: Additive, and GxE, gamma
+# Trait 3: Additive, gamma
 SP$addTraitAG(
   nQtlPerChr = nQtl,
   mean = initMeanG,
   var = initVarG,
-  varEnv = initVarEnv,
-  varGxE = initVarGE,
   gamma = TRUE,
   shape = 0.25
 )
-# Trait 4: Additive, epistasis, and GxE, gamma
+# Trait 4: Additive, epistasis, gamma
 SP$addTraitAEG(
   nQtlPerChr = nQtl,
   mean = initMeanG,
   var = initVarG,
   relAA = initRelAA,
-  varEnv = initVarEnv,
-  varGxE = initVarGE,
   gamma = TRUE,
   shape = 0.25
 )
